@@ -25,14 +25,26 @@ public class OrdonnanceService {
     private PharmacieService pharmacieService;
 
 
-    public Ordonnance createOrdonnance(Ordonnance ordonnance) throws BadRequestException, NotFoundException {
-        if(ordonnance == null){
-            throw  new BadRequestException("Ordonnance object is missing information");
+
+
+    public Ordonnance createOrdonnance(Long patientId, String encodedImage, Long pharmacieId) throws BadRequestException, NotFoundException {
+        if(encodedImage == null || pharmacieId == null){
+            throw new BadRequestException("Missing required information");
         }
-        Patient patient = patientService.findPatientById(ordonnance.getPatient().getId());
-        Pharmacie pharmacie = pharmacieService.findPharmacyById(ordonnance.getPharmacie().getId());
+
+        // Validate image data length
+        if (encodedImage.length() > 255) {
+            throw new BadRequestException("Image data is too large. Please use a smaller image");
+        }
+
+        Patient patient = patientService.findPatientById(patientId);
+        Pharmacie pharmacie = pharmacieService.findPharmacyById(pharmacieId);
+
+        Ordonnance ordonnance = new Ordonnance();
+        ordonnance.setImageUrl(encodedImage);
         ordonnance.setPatient(patient);
         ordonnance.setPharmacie(pharmacie);
+
         return ordonnanceEJB.addOrdonnance(ordonnance);
     }
 

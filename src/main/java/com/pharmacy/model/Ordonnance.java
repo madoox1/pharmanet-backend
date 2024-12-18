@@ -36,9 +36,7 @@ public class Ordonnance {
     @Column(nullable = false)
     private Date dateEnvoi = new Date();
 
-    @NotNull(message = "The prescription image URL (imageUrl) cannot be null.")
-    @Size(max = 255, message = "The image URL (imageUrl) must be less than 255 characters.")
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String imageUrl;
 
     @NotNull(message = "The status of the prescription (statut) cannot be null.")
@@ -60,4 +58,15 @@ public class Ordonnance {
     @JsonBackReference(value = "commande-ordonnance")
     @OneToOne(mappedBy = "ordonnance", cascade = CascadeType.ALL)
     private Commande commande;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_content_id")
+    @JsonIgnore
+    private ImageContent imageContent;
+
+    @JsonProperty("imageData")
+    public String getImageData() {
+        return imageContent != null ? imageContent.getContent() : imageUrl;
+    }
 }
+

@@ -4,6 +4,7 @@ import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.ErrorDTO;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.dto.CreateOrdonnanceRequest;
+import com.pharmacy.dto.ImageResponseDTO;
 import com.pharmacy.model.Ordonnance;
 import com.pharmacy.service.OrdonnanceService;
 import jakarta.inject.Inject;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 @Path("/patients/{patientId}/ordonnances")
 public class OrdonnanceResource {
@@ -45,18 +47,42 @@ public class OrdonnanceResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response createOrdonnance(
             @PathParam("patientId") Long patientId,
-            @Valid CreateOrdonnanceRequest request)
-            throws BadRequestException, NotFoundException {
+            @Valid CreateOrdonnanceRequest request) {
         try {
-            return Response.ok(ordonnanceService.createOrdonnance(
-                    patientId,
-                    request.getEncodedImage(),
-                    request.getPharmacieId()
-            )).build();
-        } catch (BadRequestException e) {
+            Ordonnance ordonnance = ordonnanceService.createOrdonnance(
+                patientId,
+                request.getEncodedImage(),
+                request.getPharmacieId()
+            );
+            return Response.ok(ordonnance).build();
+        } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorDTO(e.getMessage()))
-                    .build();
+                         .entity(new ErrorDTO(e.getMessage()))
+                         .build();
+        }
+    }
+
+    /**
+     * Récupère le contenu de l'image d'une ordonnance spécifique.
+     *
+     * @param ordonnanceId L'ID de l'ordonnance.
+     * @return Le contenu de l'image de l'ordonnance.
+     * @throws NotFoundException Si l'ordonnance n'est pas trouvée.
+     */
+    @GET
+    @Path("/{ordonnanceId}/image")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getOrdonnanceImage(@PathParam("ordonnanceId") Long ordonnanceId) {
+        try {
+            ImageResponseDTO image = ordonnanceService.getDecodedImage(ordonnanceId);
+            return Response.ok(image.getImageData())
+                         .header("Content-Type", image.getContentType())
+                         .header("Content-Disposition", "inline; filename=\"ordonnance.jpg\"")
+                         .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorDTO("Image non trouvée"))
+                         .build();
         }
     }
 }

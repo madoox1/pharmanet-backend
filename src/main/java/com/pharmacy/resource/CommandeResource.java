@@ -1,5 +1,6 @@
 package com.pharmacy.resource;
 
+import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.model.Commande;
 import com.pharmacy.service.CommandeService;
@@ -42,5 +43,16 @@ public class CommandeResource {
             throws NotFoundException {
         Commande commande = commandeService.getCommandeStatus(patientId, commandeId);
         return Response.ok(commande).build();
+    }
+
+    @POST
+    @Path("/{ordonnanceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createCommande(
+            @PathParam("patientId") Long patientId,
+            @PathParam("ordonnanceId") Long ordonnanceId) throws NotFoundException, BadRequestException {
+        return Response.status(Response.Status.CREATED)
+                      .entity(commandeService.createCommande(patientId, ordonnanceId))
+                      .build();
     }
 }

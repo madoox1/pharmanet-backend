@@ -18,13 +18,16 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(
-        name = "ordonnance",
-        indexes = {
-                @Index(name = "idx_patient_id", columnList = "patient_id"),
-                @Index(name = "idx_pharmacie_id", columnList = "pharmacie_id"),
-                @Index(name = "idx_statut", columnList = "statut"),
-                @Index(name = "idx_dateEnvoi", columnList = "dateEnvoi")
-        }
+    name = "ordonnance",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_patient_pharmacie",
+            columnNames = {"patient_id", "pharmacie_id"}
+        )
+    },
+    indexes = {
+        @Index(name = "idx_patient_pharmacie", columnList = "patient_id,pharmacie_id")
+    }
 )
 public class Ordonnance {
 
@@ -32,32 +35,47 @@ public class Ordonnance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "The prescription date (dateEnvoi) cannot be null.")
+    @NotNull(message = "La date d'envoi ne peut pas être nulle")
     @Column(nullable = false)
     private Date dateEnvoi = new Date();
 
-    @NotNull(message = "The prescription image URL (imageUrl) cannot be null.")
-    @Size(max = 255, message = "The image URL (imageUrl) must be less than 255 characters.")
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String imageUrl;
 
-    @NotNull(message = "The status of the prescription (statut) cannot be null.")
+    @NotNull(message = "Le statut ne peut pas être nul")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    @JsonIgnore
+    @Column(nullable = false)
     private OrdonnanceStatut statut = OrdonnanceStatut.PENDING;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference(value = "patient-ordonnance")
     @JoinColumn(name = "patient_id", nullable = false)
+    @JsonIgnore
     private Patient patient;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference(value = "pharmacie-ordonnance")
     @JoinColumn(name = "pharmacie_id", nullable = false)
+    @JsonIgnore
     private Pharmacie pharmacie;
 
-    @JsonBackReference(value = "commande-ordonnance")
     @OneToOne(mappedBy = "ordonnance", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Commande commande;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "image_content_id")
+    private ImageContent imageContent;
+
+
+
+    // Méthode utilitaire pour récupérer l'image
+    @JsonIgnore
+    public String getImageContent() {
+        return imageContent != null ? imageContent.getContent() : imageUrl;
+    }
+
+    // Méthode utilitaire pour définir l'image
+    @JsonIgnore
+    public void setImageContent(ImageContent imageContent) {
+        this.imageContent = imageContent;
+    }
 }

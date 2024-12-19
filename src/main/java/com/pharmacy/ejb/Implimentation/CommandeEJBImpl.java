@@ -18,11 +18,9 @@ public class CommandeEJBImpl {
         return commande;
     }
 
-
     public Commande findCommandeById(Long id) {
         return em.find(Commande.class, id);
     }
-
 
     public List<Commande> getCommandesByPatientId(Long patientId) {
         return em.createQuery("SELECT c FROM Commande c WHERE c.patient.id = :patientId", Commande.class)
@@ -30,13 +28,11 @@ public class CommandeEJBImpl {
                 .getResultList();
     }
 
-
     public List<Commande> getCommandesByStatus(String status) {
         return em.createQuery("SELECT c FROM Commande c WHERE c.status = :status", Commande.class)
                 .setParameter("status", status)
                 .getResultList();
     }
-
 
     public Commande getCommandeStatus(Long patientId, Long commandeId) {
         return em.createQuery(
@@ -47,10 +43,18 @@ public class CommandeEJBImpl {
                 .getSingleResult();
     }
 
+    public List<Commande> findCommandeByOrdonnanceId(Long ordonnanceId) {
+        return em.createQuery(
+            "SELECT c FROM Commande c WHERE c.ordonnance.id = :ordonnanceId", 
+            Commande.class
+        )
+        .setParameter("ordonnanceId", ordonnanceId)
+        .getResultList();
+    }
+
     public Commande updateCommande(Commande commande) {
         return em.merge(commande);
     }
-
 
     public void deleteCommande(Long id) {
         Commande existingCommande = em.find(Commande.class, id);

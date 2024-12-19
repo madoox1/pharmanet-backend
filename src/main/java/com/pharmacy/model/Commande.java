@@ -25,15 +25,15 @@ public class Commande {
     @Column(nullable = false)
     private float montantTotal;
 
-    @NotNull(message = "La date de création ne peut pas être nulle.")
     @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false, updatable = false)
-    private Date dateCreation;
+    @JsonIgnore
+    private Date dateCreation=new Date();
 
     @NotNull(message = "Le statut de la commande ne peut pas être nul.")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private CommandeStatut statut; // Updated to Enum
+    private CommandeStatut statut=CommandeStatut.EN_COURS;
 
     @OneToOne
     @JoinColumn(name = "ordonnance_id", nullable = false)
@@ -42,7 +42,10 @@ public class Commande {
 
 
 
-
+    @ManyToOne
+    @JoinColumn(name = "patient_id", nullable = false)
+    @JsonBackReference
+    private  Patient patient;
 
 
 }

@@ -22,7 +22,7 @@ public class ValidationExceptionMapper implements ExceptionMapper<ConstraintViol
         }
         
         return Response.status(Response.Status.BAD_REQUEST)
-                      .entity(new ErrorDTO("Validation failed", errors))
+                      .entity(new ErrorDTO("Validation failed"))
                       .build();
     }
 }

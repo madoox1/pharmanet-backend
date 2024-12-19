@@ -4,6 +4,7 @@ import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.ErrorDTO;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.dto.CreateOrdonnanceRequest;
+import com.pharmacy.dto.ImageResponseDTO;
 import com.pharmacy.model.Ordonnance;
 import com.pharmacy.service.OrdonnanceService;
 import jakarta.inject.Inject;
@@ -57,6 +58,23 @@ public class OrdonnanceResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new ErrorDTO(e.getMessage()))
                     .build();
+        }
+    }
+
+    @GET
+    @Path("/{ordonnanceId}/image")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getOrdonnanceImage(@PathParam("ordonnanceId") Long ordonnanceId) {
+        try {
+            ImageResponseDTO image = ordonnanceService.getOrdonnanceImage(ordonnanceId);
+            return Response.ok(image.getImageData())
+                         .header("Content-Type", image.getContentType())
+                         .header("Content-Disposition", "inline; filename=\"ordonnance.jpg\"")
+                         .build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorDTO("Image non trouvée"))
+                         .build();
         }
     }
 }

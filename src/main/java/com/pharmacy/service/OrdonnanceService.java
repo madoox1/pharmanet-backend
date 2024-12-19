@@ -32,6 +32,11 @@ public class OrdonnanceService {
         // Validations
         validateInputs(patientId, encodedImage, pharmacieId);
         
+        // Check if ordonnance already exists
+        if (ordonnanceExists(patientId, pharmacieId)) {
+            throw new BadRequestException("Ordonnance already exists for this patient and pharmacy");
+        }
+
         // Création de l'ordonnance
         Ordonnance ordonnance = new Ordonnance();
         ordonnance.setPatient(patientService.findPatientById(patientId));
@@ -41,6 +46,12 @@ public class OrdonnanceService {
         saveImage(ordonnance, encodedImage);
 
         return ordonnanceEJB.addOrdonnance(ordonnance);
+    }
+
+    private boolean ordonnanceExists(Long patientId, Long pharmacieId) {
+        List<Ordonnance> existingOrdonnances = ordonnanceEJB.getOrdonnancesByPatientId(patientId);
+        return existingOrdonnances.stream()
+                .anyMatch(ordonnance -> ordonnance.getPharmacie().getId().equals(pharmacieId));
     }
 
     private void validateInputs(Long patientId, String encodedImage, Long pharmacieId) throws BadRequestException {
@@ -117,6 +128,18 @@ public class OrdonnanceService {
             throw new NotFoundException("No ordonnance found for patient with id " + id);
         }
         return ordonnances;
+    }
+
+    public Ordonnance getOrdonnance(Long patientId, Long ordonnanceId) throws NotFoundException {
+        // Validate patient
+        patientService.findPatientById(patientId);
+        
+        // Retrieve ordonnance
+        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
+        if (ordonnance == null || !ordonnance.getPatient().getId().equals(patientId)) {
+            throw new NotFoundException("Ordonnance not found for this patient");
+        }
+        return ordonnance;
     }
 
 }

@@ -55,11 +55,28 @@ public class OrdonnanceResource {
                 request.getPharmacieId()
             );
             return Response.ok(ordonnance).build();
-        } catch (Exception e) {
+        } catch (BadRequestException | NotFoundException e) {
             return Response.status(Response.Status.BAD_REQUEST)
                          .entity(new ErrorDTO(e.getMessage()))
                          .build();
         }
+    }
+
+    /**
+     * Récupère une ordonnance spécifique d'un patient.
+     *
+     * @param patientId L'ID du patient.
+     * @param ordonnanceId L'ID de l'ordonnance.
+     * @return Les détails de l'ordonnance.
+     * @throws NotFoundException Si l'ordonnance n'est pas trouvée.
+     */
+    @GET
+    @Path("/{ordonnanceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getOrdonnance(@PathParam("patientId") Long patientId, @PathParam("ordonnanceId") Long ordonnanceId)
+            throws NotFoundException {
+        Ordonnance ordonnance = ordonnanceService.getOrdonnance(patientId, ordonnanceId);
+        return Response.ok(ordonnance).build();
     }
 
     /**
@@ -79,7 +96,7 @@ public class OrdonnanceResource {
                          .header("Content-Type", image.getContentType())
                          .header("Content-Disposition", "inline; filename=\"ordonnance.jpg\"")
                          .build();
-        } catch (Exception e) {
+        } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
                          .entity(new ErrorDTO("Image non trouvée"))
                          .build();

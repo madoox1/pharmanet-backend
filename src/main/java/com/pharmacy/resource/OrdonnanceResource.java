@@ -6,13 +6,13 @@ import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.dto.CreateOrdonnanceRequest;
 import com.pharmacy.dto.ImageResponseDTO;
 import com.pharmacy.model.Ordonnance;
+import com.pharmacy.model.OrdonnanceStatut;
 import com.pharmacy.service.OrdonnanceService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 @Path("/patients/{patientId}/ordonnances")
 public class OrdonnanceResource {
@@ -47,51 +47,27 @@ public class OrdonnanceResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response createOrdonnance(
             @PathParam("patientId") Long patientId,
-            @Valid CreateOrdonnanceRequest request) {
+            @Valid CreateOrdonnanceRequest request)
+            throws BadRequestException, NotFoundException {
         try {
-            Ordonnance ordonnance = ordonnanceService.createOrdonnance(
-                patientId,
-                request.getEncodedImage(),
-                request.getPharmacieId()
-            );
-            return Response.ok(ordonnance).build();
-        } catch (BadRequestException | NotFoundException e) {
+            return Response.ok(ordonnanceService.createOrdonnance(
+                    patientId,
+                    request.getEncodedImage(),
+                    request.getPharmacieId()
+            )).build();
+        } catch (BadRequestException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                         .entity(new ErrorDTO(e.getMessage()))
-                         .build();
+                    .entity(new ErrorDTO(e.getMessage()))
+                    .build();
         }
     }
 
-    /**
-     * Récupère une ordonnance spécifique d'un patient.
-     *
-     * @param patientId L'ID du patient.
-     * @param ordonnanceId L'ID de l'ordonnance.
-     * @return Les détails de l'ordonnance.
-     * @throws NotFoundException Si l'ordonnance n'est pas trouvée.
-     */
-    @GET
-    @Path("/{ordonnanceId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getOrdonnance(@PathParam("patientId") Long patientId, @PathParam("ordonnanceId") Long ordonnanceId)
-            throws NotFoundException {
-        Ordonnance ordonnance = ordonnanceService.getOrdonnance(patientId, ordonnanceId);
-        return Response.ok(ordonnance).build();
-    }
-
-    /**
-     * Récupère le contenu de l'image d'une ordonnance spécifique.
-     *
-     * @param ordonnanceId L'ID de l'ordonnance.
-     * @return Le contenu de l'image de l'ordonnance.
-     * @throws NotFoundException Si l'ordonnance n'est pas trouvée.
-     */
     @GET
     @Path("/{ordonnanceId}/image")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response getOrdonnanceImage(@PathParam("ordonnanceId") Long ordonnanceId) {
         try {
-            ImageResponseDTO image = ordonnanceService.getDecodedImage(ordonnanceId);
+            ImageResponseDTO image = ordonnanceService.getOrdonnanceImage(ordonnanceId);
             return Response.ok(image.getImageData())
                          .header("Content-Type", image.getContentType())
                          .header("Content-Disposition", "inline; filename=\"ordonnance.jpg\"")
@@ -99,6 +75,21 @@ public class OrdonnanceResource {
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
                          .entity(new ErrorDTO("Image non trouvée"))
+                         .build();
+        }
+    }
+
+    @PATCH
+    @Path("/{ordonnanceId}/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateOrdonnanceStatus(
+            @PathParam("ordonnanceId") Long ordonnanceId,
+            @QueryParam("statut") OrdonnanceStatut statut) {
+        try {
+            return Response.ok(ordonnanceService.updateOrdonnanceStatus(ordonnanceId, statut)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorDTO("Ordonnance non trouvée"))
                          .build();
         }
     }

@@ -4,7 +4,6 @@ import com.pharmacy.model.Commande;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
 
 import java.util.List;
 
@@ -23,16 +22,10 @@ public class CommandeEJBImpl {
         return em.find(Commande.class, id);
     }
 
-    public List<Commande> getCommandesByOrdonnanceId(Long ordonnanceId) {
-        TypedQuery<Commande> query = em.createQuery("SELECT c FROM Commande c WHERE c.ordonnance.id = :ordonnanceId", Commande.class);
-        query.setParameter("ordonnanceId", ordonnanceId);
-        return query.getResultList();
-    }
-
     public List<Commande> getCommandesByPatientId(Long patientId) {
-        TypedQuery<Commande> query = em.createQuery("SELECT c FROM Commande c WHERE c.patient.id = :patientId", Commande.class);
-        query.setParameter("patientId", patientId);
-        return query.getResultList();
+        return em.createQuery("SELECT c FROM Commande c WHERE c.patient.id = :patientId", Commande.class)
+                .setParameter("patientId", patientId)
+                .getResultList();
     }
 
     public List<Commande> getCommandesByStatus(String status) {
@@ -42,10 +35,21 @@ public class CommandeEJBImpl {
     }
 
     public Commande getCommandeStatus(Long patientId, Long commandeId) {
-        TypedQuery<Commande> query = em.createQuery("SELECT c FROM Commande c WHERE c.id = :commandeId AND c.patient.id = :patientId", Commande.class);
-        query.setParameter("commandeId", commandeId);
-        query.setParameter("patientId", patientId);
-        return query.getSingleResult();
+        return em.createQuery(
+                        "SELECT c FROM Commande c WHERE c.patient.id = :patientId AND c.id = :commandeId",
+                        Commande.class)
+                .setParameter("patientId", patientId)
+                .setParameter("commandeId", commandeId)
+                .getSingleResult();
+    }
+
+    public List<Commande> findCommandeByOrdonnanceId(Long ordonnanceId) {
+        return em.createQuery(
+            "SELECT c FROM Commande c WHERE c.ordonnance.id = :ordonnanceId", 
+            Commande.class
+        )
+        .setParameter("ordonnanceId", ordonnanceId)
+        .getResultList();
     }
 
     public Commande updateCommande(Commande commande) {

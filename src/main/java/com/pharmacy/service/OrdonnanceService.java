@@ -2,19 +2,15 @@ package com.pharmacy.service;
 
 import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.NotFoundException;
-import com.pharmacy.ejb.Implimentation.OrdonnanceEJBImpl;
-import com.pharmacy.model.Ordonnance;
-import com.pharmacy.model.Patient;
-import com.pharmacy.model.Pharmacie;
-import com.pharmacy.model.Pharmacien;
-import com.pharmacy.model.ImageContent;
 import com.pharmacy.dto.ImageResponseDTO;
+import com.pharmacy.ejb.Implimentation.OrdonnanceEJBImpl;
+import com.pharmacy.model.*;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 
-import java.util.Base64;
 import java.util.List;
+import java.util.Base64;
 
 @Stateless
 public class OrdonnanceService {
@@ -29,29 +25,31 @@ public class OrdonnanceService {
     private static final int MAX_IMAGE_SIZE = 16777215; // 16MB
 
     public Ordonnance createOrdonnance(Long patientId, String encodedImage, Long pharmacieId) throws BadRequestException, NotFoundException {
-        // Validations
         validateInputs(patientId, encodedImage, pharmacieId);
         
-        // Check if ordonnance already exists
-        if (ordonnanceExists(patientId, pharmacieId)) {
-            throw new BadRequestException("Ordonnance already exists for this patient and pharmacy");
-        }
-
-        // Création de l'ordonnance
-        Ordonnance ordonnance = new Ordonnance();
-        ordonnance.setPatient(patientService.findPatientById(patientId));
-        ordonnance.setPharmacie(pharmacieService.findPharmacyById(pharmacieId));
+        // Vérifier si une ordonnance existe déjà pour ce patient et cette pharmacie
+        List<Ordonnance> existingOrdonnances = ordonnanceEJB.getOrdonnancesByPatientId(patientId);
+        boolean exists = existingOrdonnances.stream()
+                .anyMatch(o -> o.getPharmacie().getId().equals(pharmacieId));
         
-        // Gestion de l'image
-        saveImage(ordonnance, encodedImage);
+        if (exists) {
+            throw new BadRequestException("Une ordonnance existe déjà pour ce patient dans cette pharmacie");
+        }
+        
+        Patient patient = patientService.findPatientById(patientId);
+        Pharmacie pharmacie = pharmacieService.findPharmacyById(pharmacieId);
+
+        Ordonnance ordonnance = new Ordonnance();
+        ordonnance.setPatient(patient);
+        ordonnance.setPharmacie(pharmacie);
+        
+        // Sauvegarde de l'image
+        ImageContent imageContent = new ImageContent();
+        imageContent.setContent(encodedImage);
+        ordonnance.setImageContent(imageContent);
+        ordonnance.setImageUrl("content://" + patient.getId());
 
         return ordonnanceEJB.addOrdonnance(ordonnance);
-    }
-
-    private boolean ordonnanceExists(Long patientId, Long pharmacieId) {
-        List<Ordonnance> existingOrdonnances = ordonnanceEJB.getOrdonnancesByPatientId(patientId);
-        return existingOrdonnances.stream()
-                .anyMatch(ordonnance -> ordonnance.getPharmacie().getId().equals(pharmacieId));
     }
 
     private void validateInputs(Long patientId, String encodedImage, Long pharmacieId) throws BadRequestException {
@@ -63,17 +61,16 @@ public class OrdonnanceService {
         }
     }
 
-    private void saveImage(Ordonnance ordonnance, String encodedImage) {
-        ImageContent imageContent = new ImageContent();
-        imageContent.setContent(encodedImage);
-        ordonnance.setImageContent(imageContent);
-        ordonnance.setImageUrl("content://" + ordonnance.getPatient().getId());
-    }
-
-    public ImageResponseDTO getDecodedImage(Long ordonnanceId) throws NotFoundException {
-        String encodedImage = getOrdonnanceImage(ordonnanceId);
-        if (encodedImage == null) {
+    public ImageResponseDTO getOrdonnanceImage(Long ordonnanceId) throws NotFoundException {
+        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
+        if (ordonnance == null || ordonnance.getImageContent() == null) {
             throw new NotFoundException("Image non trouvée");
+        }
+        
+        // Get content from ImageContent object
+        String encodedImage = ordonnance.getImageContent();
+        if (encodedImage == null) {
+            throw new NotFoundException("Image content is null");
         }
 
         return new ImageResponseDTO(
@@ -92,18 +89,6 @@ public class OrdonnanceService {
             "image/jpeg";
     }
 
-    // Add method to retrieve image content
-    public String getOrdonnanceImage(Long ordonnanceId) throws NotFoundException {
-        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
-        if (ordonnance == null) {
-            throw new NotFoundException("Ordonnance not found");
-        }
-        
-        return ordonnance.getImageContent() != null ? 
-               ordonnance.getImageContent().getContent() : 
-               ordonnance.getImageUrl();
-    }
-
     public void deleteOrdonnance(Long id) throws NotFoundException {
         Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(id);
         if (ordonnance == null) {
@@ -112,12 +97,20 @@ public class OrdonnanceService {
         ordonnanceEJB.deleteOrdonnance(ordonnance);
     }
 
-
     public Ordonnance updateOrdonnance(Ordonnance ordonnance, Long id) throws NotFoundException {
         if (ordonnanceEJB.findOrdonnanceById(id) == null) {
             throw new NotFoundException("Ordonnance with id " + id + " not found");
         }
         ordonnance.setId(id);
+        return ordonnanceEJB.updateOrdonnance(ordonnance);
+    }
+
+    public Ordonnance updateOrdonnanceStatus(Long ordonnanceId, OrdonnanceStatut statut) throws NotFoundException {
+        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
+        if (ordonnance == null) {
+            throw new NotFoundException("Ordonnance non trouvée");
+        }
+        ordonnance.setStatut(statut);
         return ordonnanceEJB.updateOrdonnance(ordonnance);
     }
 
@@ -130,16 +123,10 @@ public class OrdonnanceService {
         return ordonnances;
     }
 
-    public Ordonnance getOrdonnance(Long patientId, Long ordonnanceId) throws NotFoundException {
-        // Validate patient
-        patientService.findPatientById(patientId);
-        
-        // Retrieve ordonnance
-        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
-        if (ordonnance == null || !ordonnance.getPatient().getId().equals(patientId)) {
-            throw new NotFoundException("Ordonnance not found for this patient");
+    public Ordonnance findOrdonnanceById(Long ordonnanceId) throws BadRequestException {
+        if (ordonnanceId == null) {
+            throw new BadRequestException("Ordonnance ID is required");
         }
-        return ordonnance;
+        return ordonnanceEJB.findOrdonnanceById(ordonnanceId);
     }
-
 }

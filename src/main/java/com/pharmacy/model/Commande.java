@@ -21,16 +21,19 @@ public class Commande {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Le montant total ne peut pas être nul.")
+    @Column(nullable = false)
+    private float montantTotal;
 
-    @NotNull(message = "La date de création ne peut pas être nulle.")
     @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false, updatable = false)
-    private Date dateCreation= new Date();
+    @JsonIgnore
+    private Date dateCreation=new Date();
 
     @NotNull(message = "Le statut de la commande ne peut pas être nul.")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private CommandeStatut statut= CommandeStatut.EN_COURS;
+    private CommandeStatut statut=CommandeStatut.EN_COURS;
 
     @OneToOne
     @JoinColumn(name = "ordonnance_id", nullable = false)
@@ -38,12 +41,11 @@ public class Commande {
     private Ordonnance ordonnance;
 
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference(value = "patient-commande")
+
+    @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
-    private Patient patient;
-
-
+    @JsonBackReference
+    private  Patient patient;
 
 
 }

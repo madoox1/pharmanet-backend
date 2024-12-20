@@ -1,8 +1,10 @@
 package com.pharmacy.resource;
 
+import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.ErrorDTO;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.model.Commande;
+import com.pharmacy.model.CommandeStatut;
 import com.pharmacy.service.CommandeService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -29,20 +31,6 @@ public class CommandeResource {
     }
 
     /**
-     * Récupère toutes les commandes d'un patient spécifique.
-     *
-     * @param patientId L'ID du patient.
-     * @return Une liste des commandes liées au patient.
-     * @throws NotFoundException Si aucune commande n'est trouvée pour ce patient.
-     */
-    @GET
-    @Path("/all")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getCommandesByPatientId(@PathParam("patientId") Long patientId) throws NotFoundException {
-        return Response.ok(commandeService.getCommandesByPatientId(patientId)).build();
-    }
-
-    /**
      * Vérifie le statut d'une commande spécifique d'un patient.
      *
      * @param patientId L'ID du patient.
@@ -59,71 +47,28 @@ public class CommandeResource {
         return Response.ok(commande).build();
     }
 
-    /**
-     * Récupère une commande spécifique d'un patient.
-     *
-     * @param patientId L'ID du patient.
-     * @param commandeId L'ID de la commande.
-     * @return Les détails de la commande.
-     * @throws NotFoundException Si la commande n'est pas trouvée.
-     */
-    @GET
-    @Path("/{commandeId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getCommande(@PathParam("patientId") Long patientId, @PathParam("commandeId") Long commandeId)
-            throws NotFoundException {
-        Commande commande = commandeService.getCommande(patientId, commandeId);
-        return Response.ok(commande).build();
-    }
-
-    /**
-     * Crée une nouvelle commande pour un patient spécifique.
-     *
-     * @param patientId L'ID du patient.
-     * @param ordonnanceId L'ID de l'ordonnance.
-     * @return La commande nouvellement créée.
-     * @throws NotFoundException Si le patient ou l'ordonnance n'est pas trouvé.
-     */
     @POST
     @Path("/{ordonnanceId}")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response createCommande(
             @PathParam("patientId") Long patientId,
-            @PathParam("ordonnanceId") Long ordonnanceId) {
-        try {
-            Commande commande = commandeService.createCommande(patientId, ordonnanceId);
-            return Response.ok(commande).build();
-        } catch (NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                         .entity(new ErrorDTO(e.getMessage()))
-                         .build();
-        }
+            @PathParam("ordonnanceId") Long ordonnanceId) throws NotFoundException, BadRequestException {
+        return Response.status(Response.Status.CREATED)
+                      .entity(commandeService.createCommande(patientId, ordonnanceId))
+                      .build();
     }
 
-    /**
-     * Met à jour le statut d'une commande spécifique d'un patient.
-     *
-     * @param patientId L'ID du patient.
-     * @param commandeId L'ID de la commande.
-     * @param statut Le nouveau statut de la commande.
-     * @return Les détails de la commande mise à jour.
-     * @throws NotFoundException Si la commande n'est pas trouvée.
-     */
-    @PUT
+    @PATCH
     @Path("/{commandeId}/status")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateCommandeStatus(
-            @PathParam("patientId") Long patientId,
             @PathParam("commandeId") Long commandeId,
             @QueryParam("statut") CommandeStatut statut) {
         try {
-            Commande commande = commandeService.updateCommandeStatus(patientId, commandeId, statut);
-            return Response.ok(commande).build();
+            return Response.ok(commandeService.updateCommandeStatus(commandeId, statut)).build();
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
-                         .entity(new ErrorDTO(e.getMessage()))
+                         .entity(new ErrorDTO("Commande non trouvée"))
                          .build();
         }
     }

@@ -105,6 +105,15 @@ public class OrdonnanceService {
         return ordonnanceEJB.updateOrdonnance(ordonnance);
     }
 
+    public Ordonnance updateOrdonnanceStatus(Long ordonnanceId, OrdonnanceStatut statut) throws NotFoundException {
+        Ordonnance ordonnance = ordonnanceEJB.findOrdonnanceById(ordonnanceId);
+        if (ordonnance == null) {
+            throw new NotFoundException("Ordonnance non trouvée");
+        }
+        ordonnance.setStatut(statut);
+        return ordonnanceEJB.updateOrdonnance(ordonnance);
+    }
+
     public List<Ordonnance> getOrdonnancesByPatientId(Long id) throws NotFoundException {
         patientService.findPatientById(id);
         List<Ordonnance> ordonnances = ordonnanceEJB.getOrdonnancesByPatientId(id);

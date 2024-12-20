@@ -4,6 +4,7 @@ import com.pharmacy.Exceptions.BadRequestException;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.ejb.Implimentation.CommandeEJBImpl;
 import com.pharmacy.model.Commande;
+import com.pharmacy.model.CommandeStatut;
 import com.pharmacy.model.Ordonnance;
 import com.pharmacy.model.Patient;
 import jakarta.ejb.EJB;
@@ -55,5 +56,14 @@ public class CommandeService {
             throw new NotFoundException("Aucune commande trouvée pour ce patient");
         }
         return commandes;
+    }
+
+    public Commande updateCommandeStatus(Long commandeId, CommandeStatut statut) throws NotFoundException {
+        Commande commande = commandeEJBImpl.findCommandeById(commandeId);
+        if (commande == null) {
+            throw new NotFoundException("Commande non trouvée");
+        }
+        commande.setStatut(statut);
+        return commandeEJBImpl.updateCommande(commande);
     }
 }

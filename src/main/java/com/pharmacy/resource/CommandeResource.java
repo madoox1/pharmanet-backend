@@ -1,8 +1,10 @@
 package com.pharmacy.resource;
 
 import com.pharmacy.Exceptions.BadRequestException;
+import com.pharmacy.Exceptions.ErrorDTO;
 import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.model.Commande;
+import com.pharmacy.model.CommandeStatut;
 import com.pharmacy.service.CommandeService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -54,5 +56,20 @@ public class CommandeResource {
         return Response.status(Response.Status.CREATED)
                       .entity(commandeService.createCommande(patientId, ordonnanceId))
                       .build();
+    }
+
+    @PATCH
+    @Path("/{commandeId}/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateCommandeStatus(
+            @PathParam("commandeId") Long commandeId,
+            @QueryParam("statut") CommandeStatut statut) {
+        try {
+            return Response.ok(commandeService.updateCommandeStatus(commandeId, statut)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorDTO("Commande non trouvée"))
+                         .build();
+        }
     }
 }

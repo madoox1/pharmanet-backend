@@ -6,6 +6,7 @@ import com.pharmacy.Exceptions.NotFoundException;
 import com.pharmacy.dto.CreateOrdonnanceRequest;
 import com.pharmacy.dto.ImageResponseDTO;
 import com.pharmacy.model.Ordonnance;
+import com.pharmacy.model.OrdonnanceStatut;
 import com.pharmacy.service.OrdonnanceService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -74,6 +75,21 @@ public class OrdonnanceResource {
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND)
                          .entity(new ErrorDTO("Image non trouvée"))
+                         .build();
+        }
+    }
+
+    @PATCH
+    @Path("/{ordonnanceId}/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateOrdonnanceStatus(
+            @PathParam("ordonnanceId") Long ordonnanceId,
+            @QueryParam("statut") OrdonnanceStatut statut) {
+        try {
+            return Response.ok(ordonnanceService.updateOrdonnanceStatus(ordonnanceId, statut)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorDTO("Ordonnance non trouvée"))
                          .build();
         }
     }

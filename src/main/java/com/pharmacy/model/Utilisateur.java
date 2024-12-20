@@ -10,7 +10,8 @@ import lombok.AllArgsConstructor;
 import java.util.Date;
 
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,6 +35,7 @@ public abstract class Utilisateur {
     @NotBlank(message = "L'email ne peut pas être vide.")
     @Email(message = "L'email doit être valide.")
     @Size(max = 255, message = "L'email doit contenir au maximum 255 caractères.")
+    @Column(nullable = false, unique = true)
     private String email;
 
     @NotNull(message = "Le mot de passe ne peut pas être nul.")
@@ -51,9 +53,5 @@ public abstract class Utilisateur {
     @Enumerated(EnumType.STRING)
     @JsonIgnore
     private UtilisateurStatus status=UtilisateurStatus.Inactive;
-
-
-
-
 
 }
